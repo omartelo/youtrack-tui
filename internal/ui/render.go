@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/list"
 	"charm.land/glamour/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/omartelo/youtrack-tui/internal/youtrack"
 )
@@ -141,20 +142,26 @@ var _ list.DefaultItem = filterItem{}
 
 // --- issue detail ---------------------------------------------------------
 
-// renderIssue composes the whole detail pane: header, fields, description,
-// attachments, links and comments, stacked into one scrollable document.
-func renderIssue(c *youtrack.Client, iss *youtrack.Issue, comments []youtrack.Comment, width int) string {
+// renderIssue composes the detail pane in two halves: head — which issue this
+// is — and the body that scrolls under it. app.go pins the head above the
+// viewport, so the title stays on screen however far down the comments go.
+//
+// Both head lines are truncated rather than wrapped: pinned, the head has to
+// be exactly the height the layout subtracts for it, or the footer falls off
+// the bottom of a narrow terminal.
+func renderIssue(c *youtrack.Client, iss *youtrack.Issue, comments []youtrack.Comment, width int) (head, body string) {
 	inner := max(20, width-2)
 	md := newMarkdown(inner - 2)
 
+	head = styHead.Render(link(ansi.Truncate(iss.ID+"  "+iss.Summary, inner, "…"), c.IssueURL(iss.ID))) +
+		// A blank line under the summary: with the dates against it the two
+		// read as one paragraph.
+		"\n\n" +
+		styDim.Render(ansi.Truncate(fmt.Sprintf("reported by %s · created %s · updated %s",
+			fallback(iss.Reporter.String(), "—"), relTime(iss.Created), relTime(iss.Updated)), inner, "…")) +
+		"\n" + styRule.Render(strings.Repeat("─", inner))
+
 	var b strings.Builder
-	b.WriteString(styHead.Render(link(iss.ID+"  "+iss.Summary, c.IssueURL(iss.ID))))
-	// A blank line under the summary: it is the one line here that wraps, and
-	// with the dates against it the two read as one paragraph.
-	b.WriteString("\n\n")
-	b.WriteString(styDim.Render(fmt.Sprintf("reported by %s · created %s · updated %s",
-		fallback(iss.Reporter.String(), "—"), relTime(iss.Created), relTime(iss.Updated))))
-	b.WriteString("\n" + styRule.Render(strings.Repeat("─", inner)) + "\n")
 
 	if s := renderFields(*iss); s != "" {
 		b.WriteString(section("Fields", s))
@@ -167,7 +174,7 @@ func renderIssue(c *youtrack.Client, iss *youtrack.Issue, comments []youtrack.Co
 		b.WriteString(section("Links", s))
 	}
 	b.WriteString(section(fmt.Sprintf("Comments (%d)", len(comments)), renderComments(c, comments, md, inner-2)))
-	return b.String()
+	return head, b.String()
 }
 
 func section(title, body string) string {
