@@ -42,6 +42,9 @@ type Model struct {
 	filters list.Model
 	issues  list.Model
 	detail  viewport.Model
+	// detailHead is the issue title block, kept out of the viewport so it
+	// stays on screen while the body scrolls under it.
+	detailHead string
 	// edit is the field-then-value picker `e` opens, one list.Model for both
 	// steps: the delegate changes, and the screen says which step it is.
 	edit       list.Model
@@ -677,16 +680,20 @@ func (m *Model) layout() {
 	m.issues.SetSize(m.w, body)
 	m.edit.SetSize(m.w, body)
 	m.detail.SetWidth(m.w)
-	m.detail.SetHeight(body)
+	m.detail.SetHeight(max(1, body-lipgloss.Height(m.detailHead)))
 }
 
 func (m *Model) renderDetail() {
 	if m.current == nil || m.w == 0 {
 		return
 	}
-	body := renderIssue(m.client, m.current, m.comments, m.w)
+	head, body := renderIssue(m.client, m.current, m.comments, m.w)
+	m.detailHead = head
 	m.detail.SetContent(body)
 	m.commentsLine = commentsLineOf(body)
+	// The head eats rows the viewport was given: re-layout, or it scrolls past
+	// the footer.
+	m.layout()
 }
 
 // commentsLineOf finds the comments heading in a rendered issue, which is
@@ -719,7 +726,7 @@ func (m *Model) View() tea.View {
 	case screenIssues:
 		body = m.issues.View()
 	case screenDetail:
-		body = m.detail.View()
+		body = lipgloss.JoinVertical(lipgloss.Left, m.detailHead, m.detail.View())
 	case screenEditField, screenEditValue:
 		body = m.edit.View()
 	}

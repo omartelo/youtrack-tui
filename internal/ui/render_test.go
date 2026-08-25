@@ -134,7 +134,8 @@ func TestRenderIssueHasEverySection(t *testing.T) {
 			LinkType: youtrack.LinkType{SourceToTarget: "relates to"},
 			Issues:   []youtrack.Issue{{ID: "PAY-1", Summary: "one"}}}},
 	}
-	out := plain(renderIssue(c, iss, []youtrack.Comment{{Text: "hi"}}, 90))
+	head, body := renderIssue(c, iss, []youtrack.Comment{{Text: "hi"}}, 90)
+	out := plain(head + body)
 
 	for _, want := range []string{"PAY-1421", "Fields", "Description", "Attachments", "Links", "Comments (1)"} {
 		if !strings.Contains(out, want) {
@@ -142,7 +143,8 @@ func TestRenderIssueHasEverySection(t *testing.T) {
 		}
 	}
 	// Sections with nothing in them are dropped, not rendered empty.
-	bare := plain(renderIssue(c, &youtrack.Issue{ID: "PAY-2"}, nil, 90))
+	_, bareBody := renderIssue(c, &youtrack.Issue{ID: "PAY-2"}, nil, 90)
+	bare := plain(bareBody)
 	for _, gone := range []string{"Fields", "Attachments", "Links"} {
 		if strings.Contains(bare, gone) {
 			t.Errorf("empty section %q was rendered anyway", gone)

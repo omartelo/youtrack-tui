@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The issue head — id, summary and the reported/created/updated line — is
+  pinned above the detail viewport instead of scrolling away with the body.
+  Reading the last comment of a long issue still says which issue it is. Both
+  lines are truncated rather than wrapped: pinned, the head has to be exactly
+  the height the layout subtracts for it.
+
 ## [0.7.0] - 2026-08-20
 
 ### Added

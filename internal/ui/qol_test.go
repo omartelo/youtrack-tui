@@ -11,6 +11,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/omartelo/youtrack-tui/internal/config"
 	"github.com/omartelo/youtrack-tui/internal/youtrack"
@@ -195,5 +196,29 @@ func TestDetailJumps(t *testing.T) {
 	press(m, tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
 	if got := m.detail.YOffset(); got <= half {
 		t.Errorf("ctrl+d left the view at %d, want below %d", got, half)
+	}
+}
+
+// The head is pinned above the viewport, not scrolled with the body: reading
+// the last comment of a long issue should still say which issue it is.
+func TestDetailHeadStaysPinned(t *testing.T) {
+	m, _ := serverModel(t, `[]`)
+	m.w, m.h = 100, 12
+	m.layout()
+
+	press(m, detailMsg{gen: m.gen, issue: &youtrack.Issue{ID: "PAY-1", Summary: "pinned"},
+		comments: []youtrack.Comment{{Text: strings.Repeat("long\n\n", 40)}}})
+	press(m, tea.KeyPressMsg{Code: 'G', Text: "G"})
+
+	if !strings.Contains(plain(m.detailHead), "PAY-1") {
+		t.Fatal("the pinned head does not carry the issue id")
+	}
+	if strings.Contains(plain(m.detail.View()), "PAY-1") {
+		t.Error("the head is still inside the scrolling body")
+	}
+	// And it is paid for: the viewport gives up exactly the rows the head takes,
+	// otherwise the footer scrolls off the bottom.
+	if got := lipgloss.Height(m.detailHead) + m.detail.Height(); got != m.h-chromeLines {
+		t.Errorf("head plus body is %d rows, the pane is %d", got, m.h-chromeLines)
 	}
 }
