@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -134,24 +135,63 @@ func TestRenderIssueHasEverySection(t *testing.T) {
 			LinkType: youtrack.LinkType{SourceToTarget: "relates to"},
 			Issues:   []youtrack.Issue{{ID: "PAY-1", Summary: "one"}}}},
 	}
-	head, body := renderIssue(c, iss, []youtrack.Comment{{Text: "hi"}}, 90)
+	edit := youtrack.Change{Timestamp: 1}
+	edit.Field.Name = "State"
+	head, body := renderIssue(c, iss, []youtrack.Comment{{Text: "hi"}}, []youtrack.Change{edit}, 90)
 	out := plain(head + body)
 
-	for _, want := range []string{"PAY-1421", "Fields", "Description", "Attachments", "Links", "Comments (1)"} {
+	for _, want := range []string{"PAY-1421", "Fields", "Description", "Attachments", "Links", "Comments (1)", "History"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("section %q missing from the detail view", want)
 		}
 	}
 	// Sections with nothing in them are dropped, not rendered empty.
-	_, bareBody := renderIssue(c, &youtrack.Issue{ID: "PAY-2"}, nil, 90)
+	_, bareBody := renderIssue(c, &youtrack.Issue{ID: "PAY-2"}, nil, nil, 90)
 	bare := plain(bareBody)
-	for _, gone := range []string{"Fields", "Attachments", "Links"} {
+	for _, gone := range []string{"Fields", "Attachments", "Links", "History"} {
 		if strings.Contains(bare, gone) {
 			t.Errorf("empty section %q was rendered anyway", gone)
 		}
 	}
 	if !strings.Contains(bare, "Comments (0)") || !strings.Contains(bare, "(empty)") {
 		t.Errorf("a bare issue should still show its description and comment count:\n%s", bare)
+	}
+}
+
+// Edits saved together read as one entry under their author; the next save gets
+// a heading of its own even when the same person made it.
+func TestRenderHistory(t *testing.T) {
+	var cs []youtrack.Change
+	if err := json.Unmarshal([]byte(`[
+		{"timestamp":1000,"author":{"fullName":"Jéssica Montes"},"field":{"presentation":"Fila"},
+		 "removed":[{"name":"Não Iniciada"}],"added":[{"name":"Em Andamento"}]},
+		{"timestamp":1000,"author":{"fullName":"Jéssica Montes"},"field":{"presentation":"Prioridade"},
+		 "removed":[{"name":"Normal"}],"added":[{"name":"Crítico"}]},
+		{"timestamp":2000,"author":{"fullName":"Jéssica Montes"},"field":{"presentation":"Atribuído"},
+		 "removed":[],"added":[{"name":"Victor Gonçalves"}]},
+		{"timestamp":3000,"field":{"presentation":"Documentação"},"added":{"text":"line one\nline two"}}
+	]`), &cs); err != nil {
+		t.Fatal(err)
+	}
+
+	out := plain(renderHistory(cs, 80))
+	if got := strings.Count(out, "Jéssica Montes"); got != 2 {
+		t.Errorf("author headings = %d, want 2 (one per save):\n%s", got, out)
+	}
+	for _, want := range []string{
+		"Fila  Não Iniciada → Em Andamento",
+		"Atribuído  — → Victor Gonçalves",
+		"Documentação  — → line one line two",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("history does not read %q:\n%s", want, out)
+		}
+	}
+	if got := strings.Count(out, "\n") + 1; got != 7 {
+		t.Errorf("history is %d lines, want 7 (3 headings, 4 edits):\n%s", got, out)
+	}
+	if got := renderHistory(nil, 80); got != "" {
+		t.Errorf("no history rendered %q", got)
 	}
 }
 

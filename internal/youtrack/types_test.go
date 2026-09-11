@@ -46,6 +46,38 @@ func TestCustomFieldString(t *testing.T) {
 	}
 }
 
+// In a change a date, a period and an integer all come down as a bare number,
+// and only the field's type tells them apart. Shapes taken from a live instance.
+func TestChangeRendersBothSides(t *testing.T) {
+	const due = 1789560000000
+	cases := []struct {
+		name, json, before, after string
+	}{
+		{"state", `{"field":{"presentation":"Fila","customField":{"fieldType":{"id":"state[1]"}}},
+			"removed":[{"name":"Não Iniciada"}],"added":[{"name":"Em Andamento"}]}`, "Não Iniciada", "Em Andamento"},
+		{"user from nobody", `{"field":{"customField":{"fieldType":{"id":"user[1]"}}},"removed":[],
+			"added":[{"login":"victor.goncalves","fullName":"Victor Gonçalves","name":"Victor Gonçalves"}]}`, "", "Victor Gonçalves"},
+		{"string cleared", `{"field":{"customField":{"fieldType":{"id":"string"}}},"removed":"4.35b855","added":null}`, "4.35b855", ""},
+		{"period", `{"field":{"customField":{"fieldType":{"id":"period"}}},"removed":90,"added":960}`, "1h30m", "16h"},
+		{"short period", `{"field":{"customField":{"fieldType":{"id":"period"}}},"removed":45}`, "45m", ""},
+		{"date", `{"field":{"customField":{"fieldType":{"id":"date"}}},"added":1789560000000}`,
+			"", time.UnixMilli(due).Format("2006-01-02 15:04")},
+		{"integer stays a number", `{"field":{"customField":{"fieldType":{"id":"integer"}}},"added":45}`, "", "45"},
+	}
+	for _, tc := range cases {
+		var c Change
+		if err := json.Unmarshal([]byte(tc.json), &c); err != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		if got := c.Before(); got != tc.before {
+			t.Errorf("%s: before = %q, want %q", tc.name, got, tc.before)
+		}
+		if got := c.After(); got != tc.after {
+			t.Errorf("%s: after = %q, want %q", tc.name, got, tc.after)
+		}
+	}
+}
+
 func TestLinkLabel(t *testing.T) {
 	l := Link{Direction: "INWARD", LinkType: LinkType{Name: "Depend", SourceToTarget: "depends on", TargetToSource: "is required for"}}
 	if got := l.Label(); got != "is required for" {

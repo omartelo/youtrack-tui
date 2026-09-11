@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An open issue ends with its field history: who changed which custom field,
+  when, and from what to what — the state somebody moved the card to, the
+  assignee somebody swapped. Oldest first, so `G` lands on the latest change;
+  edits saved together sit under one author heading.
+
 ### Changed
 
 - The issue head — id, summary and the reported/created/updated line — is

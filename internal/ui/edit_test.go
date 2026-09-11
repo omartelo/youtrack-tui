@@ -44,7 +44,7 @@ func editModel(t *testing.T) (*Model, *string) {
 			_, _ = w.Write([]byte(`{"idReadable":"PAY-1"}`))
 		case strings.HasSuffix(r.URL.Path, "/customFields"):
 			_, _ = w.Write([]byte(customFieldsBody))
-		case strings.HasSuffix(r.URL.Path, "/comments"):
+		case strings.HasSuffix(r.URL.Path, "/comments"), strings.HasSuffix(r.URL.Path, "/activities"):
 			_, _ = w.Write([]byte(`[]`))
 		default:
 			_, _ = w.Write([]byte(`{"idReadable":"PAY-1","summary":"x"}`))

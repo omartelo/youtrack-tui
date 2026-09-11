@@ -149,7 +149,7 @@ var _ list.DefaultItem = filterItem{}
 // Both head lines are truncated rather than wrapped: pinned, the head has to
 // be exactly the height the layout subtracts for it, or the footer falls off
 // the bottom of a narrow terminal.
-func renderIssue(c *youtrack.Client, iss *youtrack.Issue, comments []youtrack.Comment, width int) (head, body string) {
+func renderIssue(c *youtrack.Client, iss *youtrack.Issue, comments []youtrack.Comment, history []youtrack.Change, width int) (head, body string) {
 	inner := max(20, width-2)
 	md := newMarkdown(inner - 2)
 
@@ -174,7 +174,31 @@ func renderIssue(c *youtrack.Client, iss *youtrack.Issue, comments []youtrack.Co
 		b.WriteString(section("Links", s))
 	}
 	b.WriteString(section(fmt.Sprintf("Comments (%d)", len(comments)), renderComments(c, comments, md, inner-2)))
+	// Last, so `G` lands on the latest change: who moved the card, and where.
+	if s := renderHistory(history, inner-2); s != "" {
+		b.WriteString(section("History", s))
+	}
 	return head, b.String()
+}
+
+// renderHistory lists field edits oldest first, one line each, under the person
+// who made them. Edits by one author in the same millisecond were one save in
+// YouTrack, so they share a heading.
+func renderHistory(cs []youtrack.Change, width int) string {
+	var b strings.Builder
+	for i, ch := range cs {
+		who := fallback(ch.Author.String(), "—")
+		if i == 0 || ch.Timestamp != cs[i-1].Timestamp || who != fallback(cs[i-1].Author.String(), "—") {
+			b.WriteString(styAuthor.Render(who) + styDim.Render("  "+relTime(ch.Timestamp)) + "\n")
+		}
+		// A text field's edit carries the whole text: flattened and cut, or one
+		// change would take a screen.
+		line := styLabel.Render(ch.Field.Name) + "  " +
+			styDim.Render(fallback(oneLine(ch.Before()), "—")) + " → " +
+			styValue.Render(fallback(oneLine(ch.After()), "—"))
+		b.WriteString("  " + ansi.Truncate(line, width-2, "…") + "\n")
+	}
+	return strings.TrimRight(b.String(), "\n")
 }
 
 func section(title, body string) string {
@@ -277,6 +301,8 @@ func indent(s string, n int) string {
 	p := strings.Repeat(" ", n)
 	return p + strings.ReplaceAll(s, "\n", "\n"+p)
 }
+
+func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
 
 func fallback(s, alt string) string {
 	if s == "" {

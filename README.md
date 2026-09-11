@@ -4,7 +4,7 @@ A read-mostly terminal UI for browsing YouTrack issues. Built with
 [Bubble Tea v2](https://charm.land/bubbletea/v2).
 
 Pick a saved filter, list issues, open one, read its body, comments and every
-custom field the instance defines. Attachments and issue links are OSC 8
+custom field the instance defines — and who changed which field, when. Attachments and issue links are OSC 8
 hyperlinks — **Ctrl+Click** opens them in your browser.
 
 The only thing written back is a single custom field: `e` on an open issue
@@ -244,7 +244,8 @@ comments_newest_first: true
 work over SSH, where `o` has no browser to hand it to. Inside an open issue,
 `c` jumps to the comments, `g`/`G` go to the top and bottom, and `ctrl+u`/
 `ctrl+d` move half a screen — the viewport's own vim-style bindings, alongside
-`pgup`/`pgdn`.
+`pgup`/`pgdn`. The issue ends with its field history, oldest first, so `G`
+lands on the latest change: who moved the state, who swapped the assignee.
 
 An issue list is kept for 30 seconds, so stepping out of an issue and into the
 next one does not fetch it again. `r` ignores that and asks the instance.

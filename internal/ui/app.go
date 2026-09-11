@@ -104,6 +104,7 @@ type Model struct {
 
 	current  *youtrack.Issue
 	comments []youtrack.Comment
+	history  []youtrack.Change
 
 	// watch is the background poller for filters the user is monitoring, and
 	// watchGen retires the tick chain when the provider changes or the watch
@@ -310,7 +311,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.commentsNewestFirst() {
 			slices.Reverse(msg.comments)
 		}
-		m.current, m.comments = msg.issue, msg.comments
+		m.current, m.comments, m.history = msg.issue, msg.comments, msg.history
 		// The row behind the issue must not keep showing what a field said
 		// before `e` changed it.
 		m.syncIssueInList(*msg.issue)
@@ -415,7 +416,7 @@ func (m *Model) onKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.screen = screenFilters
 		m.filters.SetItems(nil)
 		m.issues.SetItems(nil)
-		m.current, m.comments = nil, nil
+		m.current, m.comments, m.history = nil, nil, nil
 		return m, m.loadFilters()
 
 	case key.Matches(msg, m.keys.Reload):
@@ -687,7 +688,7 @@ func (m *Model) renderDetail() {
 	if m.current == nil || m.w == 0 {
 		return
 	}
-	head, body := renderIssue(m.client, m.current, m.comments, m.w)
+	head, body := renderIssue(m.client, m.current, m.comments, m.history, m.w)
 	m.detailHead = head
 	m.detail.SetContent(body)
 	m.commentsLine = commentsLineOf(body)
