@@ -27,9 +27,11 @@ const (
 	// Custom field values come in a dozen shapes; we ask for every key the
 	// generic renderer knows how to read and let the API drop what does not
 	// apply. $type is what keeps date/period rendering honest.
-	// The value half is named on its own because the editable-fields request
-	// asks for custom fields at their own endpoint, not nested in an issue.
-	fieldsValue  = "value($type,name,fullName,login,presentation,text,minutes)"
+	// The value keys are named on their own because two other requests read
+	// the same shapes: editable fields at their own endpoint, and a history
+	// entry under added and removed.
+	valueKeys    = "($type,name,fullName,login,presentation,text,minutes)"
+	fieldsValue  = "value" + valueKeys
 	fieldsCustom = "customFields(name,$type," + fieldsValue + ")"
 
 	fieldsIssueList = "idReadable,summary,created,updated,resolved," + fieldsCustom
@@ -41,6 +43,9 @@ const (
 		fieldsAttachment + "," + fieldsLink
 
 	fieldsComment = "id,text,created,author(fullName,login)," + fieldsAttachment
+
+	fieldsChange = "timestamp,author(fullName,login),field(presentation,customField(fieldType(id)))," +
+		"added" + valueKeys + ",removed" + valueKeys
 )
 
 // TLS controls how one provider's certificate is verified.
@@ -155,6 +160,16 @@ func (c *Client) Comments(ctx context.Context, id string) ([]Comment, error) {
 	var out []Comment
 	err := c.get(ctx, "/issues/"+url.PathEscape(id)+"/comments",
 		url.Values{"fields": {fieldsComment}}, &out)
+	return out, err
+}
+
+// History returns the custom field edits made to an issue, oldest first.
+func (c *Client) History(ctx context.Context, id string) ([]Change, error) {
+	var out []Change
+	err := c.get(ctx, "/issues/"+url.PathEscape(id)+"/activities", url.Values{
+		"categories": {"CustomFieldCategory"},
+		"fields":     {fieldsChange},
+	}, &out)
 	return out, err
 }
 

@@ -32,6 +32,7 @@ type detailMsg struct {
 	gen      int
 	issue    *youtrack.Issue
 	comments []youtrack.Comment
+	history  []youtrack.Change
 }
 
 // begin marks a new request generation and returns the values a command needs
@@ -103,7 +104,11 @@ func (m *Model) loadDetail(id string) tea.Cmd {
 		if err != nil {
 			return errMsg{gen, err}
 		}
-		return detailMsg{gen, issue, comments}
+		history, err := c.History(ctx, id)
+		if err != nil {
+			return errMsg{gen, err}
+		}
+		return detailMsg{gen, issue, comments, history}
 	}
 }
 

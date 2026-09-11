@@ -391,6 +391,13 @@ of them needs "fixing" before somebody actually complains.
   `DateIssueCustomField` and `PeriodIssueCustomField` are handled correctly.
   *Upgrade:* add `projectCustomField(field(fieldType(id)))` to the fields spec.
 
+- **History lists custom field edits only.** `History` asks `/activities` for
+  `CustomFieldCategory` alone, so a changed summary, description, link or
+  attachment is not in it. Each edit is one line cut at the pane width — a text
+  field's whole new text does not fit — and a period reads in hours, because
+  YouTrack's `2d` depends on an admin's workday length. *Upgrade:* more
+  `categories`, each with its own shape for `added` and `removed`.
+
 - **The app does not download attachments itself.** It builds the signed URL
   and emits OSC 8; the terminal and browser do the rest. A terminal without
   OSC 8 support (or with mouse tracking left on by another app) cannot click.

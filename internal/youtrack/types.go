@@ -108,6 +108,62 @@ type Comment struct {
 	Attachments []Attachment `json:"attachments"`
 }
 
+// Change is one edit of a custom field, from an issue's activity stream.
+type Change struct {
+	Timestamp int64 `json:"timestamp"`
+	Author    *User `json:"author"`
+	Field     struct {
+		// Presentation rather than name: name is the global field, which a
+		// project can show under another label — Priority reads Prioridade.
+		Name        string `json:"presentation"`
+		CustomField struct {
+			FieldType struct {
+				ID string `json:"id"`
+			} `json:"fieldType"`
+		} `json:"customField"`
+	} `json:"field"`
+	Added   json.RawMessage `json:"added"`
+	Removed json.RawMessage `json:"removed"`
+}
+
+// Before is what the field held until this edit, "" for nothing.
+func (c Change) Before() string { return c.render(c.Removed) }
+
+// After is what this edit left in the field, "" for nothing.
+func (c Change) After() string { return c.render(c.Added) }
+
+// render reads one side of an edit. A date, a period and an integer all arrive
+// as a bare number here, so only the field's type tells them apart.
+func (c Change) render(raw json.RawMessage) string {
+	var v any
+	if json.Unmarshal(raw, &v) != nil {
+		return ""
+	}
+	n, isNum := v.(float64)
+	switch t := c.Field.CustomField.FieldType.ID; {
+	case isNum && (t == "date" || t == "date and time"):
+		return time.UnixMilli(int64(n)).Format("2006-01-02 15:04")
+	case isNum && t == "period":
+		return hoursMinutes(int(n))
+	}
+	return renderAny(v)
+}
+
+// hoursMinutes renders a period given in minutes.
+//
+// ponytail: YouTrack says 2d where this says 16h, because its day is an admin's
+// workday setting. Read /api/admin/timeTrackingSettings if the two must match.
+func hoursMinutes(n int) string {
+	h, m := n/60, n%60
+	switch {
+	case h == 0:
+		return fmt.Sprintf("%dm", m)
+	case m == 0:
+		return fmt.Sprintf("%dh", h)
+	}
+	return fmt.Sprintf("%dh%dm", h, m)
+}
+
 // CustomField is a project-defined field. Value is kept raw because its shape
 // depends on the field type, which varies per YouTrack instance — see the
 // dynamic-fields invariant in CLAUDE.md.
