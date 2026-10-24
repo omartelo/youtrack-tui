@@ -33,7 +33,7 @@ func TestSelectedIssueID(t *testing.T) {
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	m, err := New(cfg, "", filepath.Join(t.TempDir(), "config.yml"))
+	m, err := New(cfg, "", "", filepath.Join(t.TempDir(), "config.yml"))
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

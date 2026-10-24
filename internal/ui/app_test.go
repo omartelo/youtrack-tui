@@ -10,7 +10,7 @@ import (
 // KeyPressMsg drops every paste on the floor, which makes the token field
 // unusable — nobody types a permanent token by hand.
 func TestPasteReachesTheSetupForm(t *testing.T) {
-	m, err := New(nil, "", "/tmp/youtrack-tui-test.yml")
+	m, err := New(nil, "", "", "/tmp/youtrack-tui-test.yml")
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -33,7 +33,7 @@ func TestPasteReachesTheSetupForm(t *testing.T) {
 // The form owns every key while it is up, otherwise typing a provider named
 // "prod" would fire the next-provider and reload commands.
 func TestSetupFormSwallowsGlobalKeys(t *testing.T) {
-	m, err := New(nil, "", "/tmp/youtrack-tui-test.yml")
+	m, err := New(nil, "", "", "/tmp/youtrack-tui-test.yml")
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

@@ -58,7 +58,7 @@ func editModel(t *testing.T) (*Model, *string) {
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	m, err := New(cfg, "", filepath.Join(t.TempDir(), "config.yml"))
+	m, err := New(cfg, "", "", filepath.Join(t.TempDir(), "config.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}

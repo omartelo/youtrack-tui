@@ -20,7 +20,7 @@ func markModel(t *testing.T) (*Model, string) {
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	m, err := New(cfg, "", path)
+	m, err := New(cfg, "", "", path)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

@@ -29,6 +29,7 @@ func main() {
 
 	path := flag.String("config", config.DefaultPath(), "path to config.yml")
 	provider := flag.String("provider", "", "provider name (defaults to the first one)")
+	scope := flag.String("q", "", "base query every filter and `s` query is narrowed by, e.g. \"#Logistica\"")
 	version := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 
@@ -37,13 +38,13 @@ func main() {
 		return
 	}
 
-	if err := run(*path, *provider); err != nil {
+	if err := run(*path, *provider, *scope); err != nil {
 		fmt.Fprintln(os.Stderr, "youtrack-tui:", err)
 		os.Exit(1)
 	}
 }
 
-func run(path, provider string) error {
+func run(path, provider, scope string) error {
 	// A missing config file is not an error: the TUI opens on its setup
 	// screen and writes the file once the credentials check out. A file that
 	// exists but is broken still fails loudly — overwriting someone's config
@@ -53,7 +54,7 @@ func run(path, provider string) error {
 		return err
 	}
 
-	m, err := ui.New(cfg, provider, path)
+	m, err := ui.New(cfg, provider, scope, path)
 	if err != nil {
 		return err
 	}

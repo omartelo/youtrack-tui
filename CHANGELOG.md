@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `-q "#Logistica"` opens the program narrowed to one query for the whole
+  session: every saved filter, built-in, the `Marked` list, a query typed at
+  `s` and the watcher's polls are ANDed under it. The header says
+  `scope: #Logistica`; the `s` prompt never shows it, so it cannot be erased
+  by accident. A `sort by:` in it is the session's default order, which a
+  filter's own clause and `S` both override.
+
 ## [0.8.0] - 2026-09-11
 
 ### Added
