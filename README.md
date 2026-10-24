@@ -92,6 +92,7 @@ exclusive.
 youtrack-tui                       # first provider in the config
 youtrack-tui -provider acme        # a specific one
 youtrack-tui -config ./config.yml  # a specific config file
+youtrack-tui -q "#Logistica"       # every filter narrowed to this query
 youtrack-tui update                # install the latest release
 youtrack-tui -version              # what this binary is
 ```

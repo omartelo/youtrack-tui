@@ -29,6 +29,37 @@ func TestApplySortReplacesTheClause(t *testing.T) {
 	}
 }
 
+// `-q` has to reach the instance under a query typed at `s`, and survive the
+// sort clause `S` pushes onto it.
+func TestScopeReachesTheInstance(t *testing.T) {
+	queries := make(chan string, 4)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		queries <- r.URL.Query().Get("query")
+		_, _ = w.Write([]byte("[]"))
+	}))
+	defer srv.Close()
+
+	cfg := &config.Config{Providers: []config.Provider{{
+		Name: "acme", URL: srv.URL, Token: "perm:tok",
+	}}}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	m, err := New(cfg, "", "#Logistica", filepath.Join(t.TempDir(), "config.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.screen, m.query = screenIssues, "#Unresolved"
+
+	press(m, tea.KeyPressMsg{Code: 'S', Text: "S"})
+	if got := <-queries; got != "(#Logistica) (#Unresolved) sort by: updated desc" {
+		t.Errorf("`S` sent %q", got)
+	}
+	if m.query != "#Unresolved" {
+		t.Errorf("m.query = %q, the scope leaked into what `s` is seeded with", m.query)
+	}
+}
+
 // The clause has to reach the instance, not just the model: ordering is done
 // by YouTrack, over the whole result set rather than the page on screen.
 func TestSortKeyRefetchesOrdered(t *testing.T) {
@@ -45,7 +76,7 @@ func TestSortKeyRefetchesOrdered(t *testing.T) {
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	m, err := New(cfg, "", filepath.Join(t.TempDir(), "config.yml"))
+	m, err := New(cfg, "", "", filepath.Join(t.TempDir(), "config.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +125,7 @@ func TestCommentOrderSeedsFromConfigAndToggles(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(t.TempDir(), "config.yml")
-	m, err := New(cfg, "", path)
+	m, err := New(cfg, "", "", path)
 	if err != nil {
 		t.Fatal(err)
 	}

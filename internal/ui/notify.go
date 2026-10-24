@@ -118,13 +118,13 @@ func (m *Model) tickWatch() tea.Cmd {
 // pollWatched fetches every watched filter once. Watched IDs that no longer
 // resolve to a saved search are skipped rather than reported.
 func (m *Model) pollWatched() tea.Cmd {
-	c, gen, top := m.client, m.watchGen, m.cfg.PageSize
+	c, gen, top, scope := m.client, m.watchGen, m.cfg.PageSize, m.scope
 	var cmds []tea.Cmd
 	for _, q := range m.savedQueries {
 		if !m.watch.watching[q.ID] {
 			continue
 		}
-		id, query, label := q.ID, q.Query, q.Name
+		id, query, label := q.ID, scoped(scope, q.Query), q.Name
 		cmds = append(cmds, func() tea.Msg {
 			issues, err := c.Issues(context.Background(), query, 0, top)
 			return watchResultMsg{gen: gen, filterID: id, label: label, issues: issues, err: err}

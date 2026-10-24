@@ -53,7 +53,7 @@ func TestFavoritesSortToTopAndPersist(t *testing.T) {
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	m, err := New(cfg, "", path)
+	m, err := New(cfg, "", "", path)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -143,7 +143,7 @@ func TestFavoritesMigrateFromNames(t *testing.T) {
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	m, err := New(cfg, "", path)
+	m, err := New(cfg, "", "", path)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

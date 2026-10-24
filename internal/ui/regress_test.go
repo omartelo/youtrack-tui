@@ -119,7 +119,7 @@ func TestOverlappingPagesDoNotDuplicate(t *testing.T) {
 func TestSubmitSetupWritesOnlyAfterTheAPIAnswers(t *testing.T) {
 	t.Setenv("YT_TOKEN", "perm:secret")
 	path := filepath.Join(t.TempDir(), "config.yml")
-	m, err := New(nil, "", path)
+	m, err := New(nil, "", "", path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +172,7 @@ func TestTrustAnywayIsScopedAndVisible(t *testing.T) {
 	if err := cfg.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	m, err := New(cfg, "", path)
+	m, err := New(cfg, "", "", path)
 	if err != nil {
 		t.Fatal(err)
 	}

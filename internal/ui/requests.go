@@ -82,7 +82,7 @@ func (m *Model) fetchIssues(query string, skip int, appendTo bool) tea.Cmd {
 	// The ordering clause is injected here rather than stored in m.query, so
 	// the header keeps showing what the user asked for and cycling `S` cannot
 	// stack one `sort by:` onto the last.
-	q := applySort(query, sortOrders[m.sortBy])
+	q := applySort(scoped(m.scope, query), sortOrders[m.sortBy])
 	return func() tea.Msg {
 		issues, err := c.Issues(context.Background(), q, skip, top)
 		if err != nil {

@@ -96,3 +96,24 @@ func TestQueryPromptAcceptsPaste(t *testing.T) {
 		t.Errorf("pasted query = %q", got)
 	}
 }
+
+func TestScopedNarrowsEveryQuery(t *testing.T) {
+	cases := []struct{ base, query, want string }{
+		{"", "#Unresolved", "#Unresolved"},
+		{"#Logistica", "", "(#Logistica)"},
+		{"#Logistica", "for: me #Unresolved", "(#Logistica) (for: me #Unresolved)"},
+		// `or` binds looser than juxtaposition: unparenthesised, B escapes.
+		{"#Logistica", "A or B", "(#Logistica) (A or B)"},
+		// The ordering clause has to stay last, outside the parentheses.
+		{"#Logistica", "#Unresolved sort by: created desc", "(#Logistica) (#Unresolved) sort by: created desc"},
+		{"#Logistica", "sort by: created desc", "(#Logistica) sort by: created desc"},
+		// An order in the scope is a default: the filter's own one wins.
+		{"#Logistica sort by: priority desc", "#Unresolved", "(#Logistica) (#Unresolved) sort by: priority desc"},
+		{"#Logistica sort by: priority desc", "#Unresolved sort by: created asc", "(#Logistica) (#Unresolved) sort by: created asc"},
+	}
+	for _, c := range cases {
+		if got := scoped(c.base, c.query); got != c.want {
+			t.Errorf("scoped(%q, %q) = %q, want %q", c.base, c.query, got, c.want)
+		}
+	}
+}

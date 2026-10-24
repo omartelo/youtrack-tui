@@ -64,6 +64,11 @@ func (m *Model) header() string {
 		left += " " + style.Render(label)
 	}
 
+	if m.scope != "" {
+		// Never in the `s` prompt, so this is the only place it shows.
+		left += " " + styDim.Render("scope: "+m.scope)
+	}
+
 	if clause := sortOrders[m.sortBy]; clause != "" {
 		// Exactly what was appended to the query, not a prettier name for it:
 		// the same string works when typed into the `s` prompt.

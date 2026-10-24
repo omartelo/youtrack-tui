@@ -20,6 +20,29 @@ type queryPrompt struct {
 	active bool
 }
 
+// scoped ANDs query under base, the `-q` flag. Both sides are parenthesised
+// because YouTrack binds `or` looser than juxtaposition: `#Logistica A or B`
+// would read as `(#Logistica A) or B`. A `sort by:` clause has to stay outside
+// the parentheses, at the end, where YouTrack and applySort expect it. One in
+// base is the session's default order, used when query has none of its own.
+func scoped(base, query string) string {
+	if base == "" {
+		return query
+	}
+	order := strings.TrimSpace(sortByRe.FindString(query))
+	if order == "" {
+		order = strings.TrimSpace(sortByRe.FindString(base))
+	}
+	q := "(" + strings.TrimSpace(sortByRe.ReplaceAllString(base, "")) + ")"
+	if rest := strings.TrimSpace(sortByRe.ReplaceAllString(query, "")); rest != "" {
+		q += " (" + rest + ")"
+	}
+	if order != "" {
+		q += " " + order
+	}
+	return q
+}
+
 func newQueryPrompt() queryPrompt {
 	in := textinput.New()
 	in.Prompt = ""

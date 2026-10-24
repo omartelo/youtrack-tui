@@ -102,6 +102,11 @@ type Model struct {
 	query     string
 	queryName string
 
+	// scope is the `-q` flag: ANDed onto every query at the wire, like the
+	// sort clause, so the `s` prompt never shows it and cannot drop it.
+	// Session-only — it comes from the command line, not the config.
+	scope string
+
 	current  *youtrack.Issue
 	comments []youtrack.Comment
 	history  []youtrack.Change
@@ -122,10 +127,12 @@ type Model struct {
 
 // New builds the program. A nil cfg means there is no config file yet and the
 // program opens on the setup screen instead of failing. provider selects a
-// config entry by name; empty picks the first one.
-func New(cfg *config.Config, provider, path string) (*Model, error) {
+// config entry by name; empty picks the first one. scope is the `-q` query
+// every issue query is narrowed by; empty narrows nothing.
+func New(cfg *config.Config, provider, scope, path string) (*Model, error) {
 	m := &Model{
 		path:    path,
+		scope:   strings.TrimSpace(scope),
 		setup:   newSetupForm(path),
 		prompt:  newQueryPrompt(),
 		filters: newList("Filters"),
