@@ -3,6 +3,7 @@ package youtrack
 import (
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -193,5 +194,41 @@ func TestClientErrorHasNoToken(t *testing.T) {
 	got := err.Error()
 	if !strings.Contains(got, "token expired") || strings.Contains(got, "supersecret") {
 		t.Errorf("error message leaks or lacks context: %q", got)
+	}
+}
+
+// A rejected query says why in error_children, not in error_description, and
+// one child per unreadable token takes the body well past a short read. Both
+// bodies are the shapes a live instance returned.
+func TestRejectedQueryNamesTheReason(t *testing.T) {
+	unknown := `{"error":"invalid_query","error_description":"Can't parse search query, please check and update query syntax","error_developer_message":"Não é possível analisar consulta de pesquisa","error_field":"query","error_children":[{"error":"O valor \"SOP LicitaHub\" não é usado para o campo projeto.","error_description":""}]}`
+	var children []string
+	for i := range 6 {
+		children = append(children, fmt.Sprintf(`{"error":"Não foi possível reconhecer o caractere \"(\" na posição %d","error_description":""}`, 13+i))
+	}
+	long := `{"error":"invalid_query","error_description":"Can't parse search query, please check and update query syntax","error_developer_message":"Não é possível analisar consulta de pesquisa","error_field":"query","error_children":[` + strings.Join(children, ",") + `]}`
+
+	cases := []struct{ body, want string }{
+		{unknown, `O valor "SOP LicitaHub" não é usado para o campo projeto.`},
+		{long, `Não foi possível reconhecer o caractere "(" na posição 18`},
+	}
+	for _, tc := range cases {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(tc.body))
+		}))
+		c, err := New(srv.URL, "perm:tok", TLS{})
+		if err != nil {
+			t.Fatalf("New: %v", err)
+		}
+		_, err = c.Issues(t.Context(), "projeto: {SOP LicitaHub}", 0, 1)
+		srv.Close()
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		got := err.Error()
+		if !strings.Contains(got, tc.want) || strings.Contains(got, "error_children") {
+			t.Errorf("error = %q, want the reason %q and no raw JSON", got, tc.want)
+		}
 	}
 }

@@ -218,14 +218,34 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("HTTP %d %s", e.Status, msg)
 }
 
+// errorBodyLimit caps how much of an error response is read. It has to hold
+// the whole JSON: a rejected query lists one error_children entry per token it
+// could not read, and a body cut mid-object does not parse at all.
+const errorBodyLimit = 64 << 10
+
+// snippetLimit is how much of a body that is not YouTrack's JSON — a proxy's
+// HTML page, say — is worth showing.
+const snippetLimit = 512
+
 func readSnippet(r io.Reader) string {
-	b, _ := io.ReadAll(io.LimitReader(r, 512))
+	b, _ := io.ReadAll(io.LimitReader(r, errorBodyLimit))
 	var e struct {
 		Description string `json:"error_description"`
 		Error       string `json:"error"`
+		// The reason a query was rejected — an unknown project, a character
+		// in the wrong place — is only ever here; the description is generic.
+		Children []struct {
+			Error string `json:"error"`
+		} `json:"error_children"`
 	}
 	if json.Unmarshal(b, &e) == nil && e.Description != "" {
-		return e.Description
+		msg := e.Description
+		for _, c := range e.Children {
+			if c.Error != "" {
+				msg += "\n" + c.Error
+			}
+		}
+		return msg
 	}
-	return strings.TrimSpace(string(b))
+	return strings.ToValidUTF8(strings.TrimSpace(string(b[:min(len(b), snippetLimit)])), "")
 }

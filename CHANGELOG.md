@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A rejected query now says why. YouTrack puts the reason — `O valor "SOP
+  LicitaHub" não é usado para o campo projeto.`, an unreadable character at a
+  given position — in `error_children`, under a generic "Can't parse search
+  query". Only 512 bytes of the error were read, so a body with several
+  children was cut mid-JSON and the dialog showed it raw, reason cut off. The
+  whole body is read now and every child's reason gets a line of its own.
+
 ## [0.9.1] - 2026-10-26
 
 ### Fixed
