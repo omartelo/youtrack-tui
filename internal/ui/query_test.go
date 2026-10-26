@@ -97,19 +97,25 @@ func TestQueryPromptAcceptsPaste(t *testing.T) {
 	}
 }
 
+// The shapes below were checked against a live instance: two parenthesised
+// groups side by side are a parse error, as is a `sort by:` after a `)`, and
+// of two sort clauses the first one wins.
 func TestScopedNarrowsEveryQuery(t *testing.T) {
 	cases := []struct{ base, query, want string }{
 		{"", "#Unresolved", "#Unresolved"},
 		{"#Logistica", "", "(#Logistica)"},
-		{"#Logistica", "for: me #Unresolved", "(#Logistica) (for: me #Unresolved)"},
+		{"#Logistica", "for: me #Unresolved", "(#Logistica) and (for: me #Unresolved)"},
 		// `or` binds looser than juxtaposition: unparenthesised, B escapes.
-		{"#Logistica", "A or B", "(#Logistica) (A or B)"},
-		// The ordering clause has to stay last, outside the parentheses.
-		{"#Logistica", "#Unresolved sort by: created desc", "(#Logistica) (#Unresolved) sort by: created desc"},
-		{"#Logistica", "sort by: created desc", "(#Logistica) sort by: created desc"},
-		// An order in the scope is a default: the filter's own one wins.
-		{"#Logistica sort by: priority desc", "#Unresolved", "(#Logistica) (#Unresolved) sort by: priority desc"},
-		{"#Logistica sort by: priority desc", "#Unresolved sort by: created asc", "(#Logistica) (#Unresolved) sort by: created asc"},
+		{"#Logistica", "A or B", "(#Logistica) and (A or B)"},
+		// The filter's own order stays inside its group, which YouTrack takes.
+		{"#Logistica", "#Unresolved sort by: created desc", "(#Logistica) and (#Unresolved sort by: created desc)"},
+		{"#Logistica", "#REVIEW ordenar por: projeto", "(#Logistica) and (#REVIEW ordenar por: projeto)"},
+		// The scope's order goes last, so any clause of the filter's comes
+		// first and wins — localised ones included.
+		{"#Logistica sort by: priority desc", "#Unresolved", "(#Logistica) and (#Unresolved sort by: priority desc)"},
+		{"#Logistica sort by: priority desc", "#Unresolved sort by: created asc", "(#Logistica) and (#Unresolved sort by: created asc sort by: priority desc)"},
+		{"#Logistica sort by: priority desc", "", "(#Logistica) and (sort by: priority desc)"},
+		{"sort by: priority desc", "#Unresolved", "#Unresolved sort by: priority desc"},
 	}
 	for _, c := range cases {
 		if got := scoped(c.base, c.query); got != c.want {

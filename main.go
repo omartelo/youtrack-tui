@@ -29,7 +29,7 @@ func main() {
 
 	path := flag.String("config", config.DefaultPath(), "path to config.yml")
 	provider := flag.String("provider", "", "provider name (defaults to the first one)")
-	scope := flag.String("q", "", "base query every filter and `s` query is narrowed by, e.g. \"#Logistica\"")
+	scope := flag.String("q", "", "base query every filter and raw query is narrowed by, e.g. \"#Logistica\"")
 	version := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 

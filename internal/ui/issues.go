@@ -28,7 +28,7 @@ const issueCacheTTL = 30 * time.Second
 // cacheKey is the query as it goes over the wire, ordering clause included:
 // the same filter sorted two ways is two result sets.
 func (m *Model) cacheKey(query string) string {
-	return applySort(scoped(m.scope, query), sortOrders[m.sortBy])
+	return scoped(m.scope, applySort(query, sortOrders[m.sortBy]))
 }
 
 // cacheIssues remembers everything currently on the issue list, pages and all,

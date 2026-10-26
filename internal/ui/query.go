@@ -20,27 +20,31 @@ type queryPrompt struct {
 	active bool
 }
 
-// scoped ANDs query under base, the `-q` flag. Both sides are parenthesised
-// because YouTrack binds `or` looser than juxtaposition: `#Logistica A or B`
-// would read as `(#Logistica A) or B`. A `sort by:` clause has to stay outside
-// the parentheses, at the end, where YouTrack and applySort expect it. One in
-// base is the session's default order, used when query has none of its own.
+// scoped ANDs query under base, the `-q` flag. Each side is parenthesised
+// because YouTrack binds `or` looser than juxtaposition — `#Logistica A or B`
+// reads as `(#Logistica A) or B` — and the `and` is explicit because two
+// groups side by side do not parse. Nor does a `sort by:` after a `)`, so
+// every clause stays inside the query's group. Of two clauses YouTrack takes
+// the first, so base's goes last: the session's default, which the filter's
+// own order and `S` both beat without having to be recognised — `ordenar por:`
+// included.
+//
+// shortcut: a localised order in base stays in base's group, first, and beats
+// the filter's. Recognising it means a regexp per locale; nobody has asked.
 func scoped(base, query string) string {
 	if base == "" {
 		return query
 	}
-	order := strings.TrimSpace(sortByRe.FindString(query))
-	if order == "" {
-		order = strings.TrimSpace(sortByRe.FindString(base))
+	order := strings.TrimSpace(sortByRe.FindString(base))
+	base = strings.TrimSpace(sortByRe.ReplaceAllString(base, ""))
+	inner := strings.TrimSpace(query + " " + order)
+	switch {
+	case base == "":
+		return inner
+	case inner == "":
+		return "(" + base + ")"
 	}
-	q := "(" + strings.TrimSpace(sortByRe.ReplaceAllString(base, "")) + ")"
-	if rest := strings.TrimSpace(sortByRe.ReplaceAllString(query, "")); rest != "" {
-		q += " (" + rest + ")"
-	}
-	if order != "" {
-		q += " " + order
-	}
-	return q
+	return "(" + base + ") and (" + inner + ")"
 }
 
 func newQueryPrompt() queryPrompt {
