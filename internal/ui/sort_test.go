@@ -52,7 +52,7 @@ func TestScopeReachesTheInstance(t *testing.T) {
 	m.screen, m.query = screenIssues, "#Unresolved"
 
 	press(m, tea.KeyPressMsg{Code: 'S', Text: "S"})
-	if got := <-queries; got != "(#Logistica) (#Unresolved) sort by: updated desc" {
+	if got := <-queries; got != "(#Logistica) and (#Unresolved sort by: updated desc)" {
 		t.Errorf("`S` sent %q", got)
 	}
 	if m.query != "#Unresolved" {

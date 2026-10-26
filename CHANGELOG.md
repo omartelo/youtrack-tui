@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `-q` sent a query YouTrack cannot parse whenever a filter was picked:
+  `(#Logistica) (#Unresolved)`. Two parenthesised groups need an explicit
+  `and` between them, and a `sort by:` after a `)` is a parse error too, so
+  the scope now goes out as `(#Logistica) and (#Unresolved sort by: …)`.
+  YouTrack takes the first of two sort clauses, so the one in `-q` goes last
+  and the filter's own order — `ordenar por:` included — and `S` still win.
+- `-h` listed the flag as `-q s`: Go reads a backquoted word in a flag's
+  usage as the name of its argument.
+
 ## [0.9.0] - 2026-10-24
 
 ### Added
